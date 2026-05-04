@@ -2,18 +2,18 @@
 # rathole noise-encrypted reverse-tunnel client bootstrap (one-shot)
 #
 # Usage (run as root on the internal host you want to expose):
-#   curl -fsSL -H "Authorization: token <GH_PAT>" \
-#     https://raw.githubusercontent.com/erwanjun/rathole-bootstrap/main/setup_rathole_client.sh \
+#   curl -fsSL https://raw.githubusercontent.com/erwanjun/rathole-bootstrap/main/setup_rathole_client.sh \
 #     | sudo bash -s -- \
-#         --server 120.26.178.114:2333 \
-#         --token  <DEFAULT_TOKEN> \
-#         --pubkey <NOISE_REMOTE_PUBLIC_KEY> \
-#         --service nei2_ssh \
-#         [--local 127.0.0.1:22] \
-#         [--version v0.5.0]
+#         -s 120.26.178.114:2333 \
+#         -t <DEFAULT_TOKEN> \
+#         -p <NOISE_REMOTE_PUBLIC_KEY> \
+#         -n <service-name> \
+#         [-l 127.0.0.1:22]
+#
+# Long forms also work: --server / --token / --pubkey / --service / --local / --version
 #
 # Server side (already running on the cloud host) must have a matching
-# [server.services.<service>] block bound to a public TCP port.
+# [server.services.<name>] block bound to a public TCP port.
 
 set -euo pipefail
 
@@ -26,16 +26,15 @@ RATHOLE_VERSION="v0.5.0"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --server)  SERVER="$2";  shift 2;;
-    --token)   TOKEN="$2";   shift 2;;
-    --pubkey)  PUBKEY="$2";  shift 2;;
-    --service) SERVICE="$2"; shift 2;;
-    --local)   LOCAL="$2";   shift 2;;
+    -s|--server)  SERVER="$2";  shift 2;;
+    -t|--token)   TOKEN="$2";   shift 2;;
+    -p|--pubkey)  PUBKEY="$2";  shift 2;;
+    -n|--service) SERVICE="$2"; shift 2;;
+    -l|--local)   LOCAL="$2";   shift 2;;
     --version) RATHOLE_VERSION="$2"; shift 2;;
     -h|--help)
       sed -n '2,18p' "$0" 2>/dev/null || cat <<'EOF'
-Usage: setup_rathole_client.sh --server IP:PORT --token TOKEN --pubkey PUBKEY \
-                               --service NAME [--local 127.0.0.1:22] [--version v0.5.0]
+Usage: setup_rathole_client.sh -s IP:PORT -t TOKEN -p PUBKEY -n NAME [-l 127.0.0.1:22]
 EOF
       exit 0;;
     *) echo "Unknown arg: $1" >&2; exit 1;;
@@ -43,7 +42,7 @@ EOF
 done
 
 [[ -z "$SERVER" || -z "$TOKEN" || -z "$PUBKEY" || -z "$SERVICE" ]] && {
-  echo "Missing required args. --server / --token / --pubkey / --service are mandatory." >&2
+  echo "Missing required args. -s / -t / -p / -n are mandatory." >&2
   exit 1
 }
 [[ $EUID -ne 0 ]] && { echo "Must run as root (sudo)." >&2; exit 1; }
